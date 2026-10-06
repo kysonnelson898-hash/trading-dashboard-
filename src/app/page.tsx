@@ -5,7 +5,7 @@ import PriceChart from "@/components/PriceChart";
 import { assets } from "@/lib/market";
 import type { MarketQuote } from "@/lib/market-data";
 
-const timeframes = ["30m", "4H"];
+const timeframes = ["1m", "30m", "1H", "4H"];
 
 export default function Home() {
   const [selectedSymbol, setSelectedSymbol] = useState(

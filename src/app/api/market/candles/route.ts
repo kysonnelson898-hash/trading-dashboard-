@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { CoinGeckoMarketDataProvider } from "@/lib/providers/coingecko";
+import { BitstampMarketDataProvider } from "@/lib/providers/bitstamp";
 
-const provider = new CoinGeckoMarketDataProvider();
+const provider = new BitstampMarketDataProvider();
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
