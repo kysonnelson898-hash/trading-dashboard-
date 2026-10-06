@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
   const symbol = searchParams.get("symbol");
-  const interval = searchParams.get("interval") ?? "1D";
+  const interval = searchParams.get("interval") ?? "4H";
   const limit = Number(searchParams.get("limit") ?? "100");
 
   if (!symbol) {
