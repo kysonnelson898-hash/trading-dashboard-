@@ -1,69 +1,370 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import PriceChart from "@/components/PriceChart";
+import { assets } from "@/lib/market";
+import type { MarketQuote } from "@/lib/market-data";
+
+const timeframes = ["30m", "4H"];
 
 export default function Home() {
+  const [selectedSymbol, setSelectedSymbol] = useState(
+    assets[0].symbol,
+  );
+
+  const [quotes, setQuotes] = useState<
+    Record<string, MarketQuote>
+  >({});
+
+  const [error, setError] = useState<string | null>(null);
+
+  const [selectedTimeframe, setSelectedTimeframe] =
+    useState("4H");
+
+  const selectedAsset =
+    assets.find((asset) => asset.symbol === selectedSymbol) ??
+    assets[0];
+
+  const selectedQuote = quotes[selectedAsset.symbol] ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadQuotes() {
+      try {
+        const results = await Promise.all(
+          assets.map(async (asset) => {
+            const response = await fetch(
+              `/api/market/quote?symbol=${encodeURIComponent(
+                asset.symbol,
+              )}`,
+            );
+
+            if (!response.ok) {
+              throw new Error(
+                `Unable to load ${asset.symbol}`,
+              );
+            }
+
+            const quote: MarketQuote = await response.json();
+
+            return quote;
+          }),
+        );
+
+        if (!cancelled) {
+          const nextQuotes: Record<string, MarketQuote> = {};
+
+          for (const quote of results) {
+            nextQuotes[quote.symbol] = quote;
+          }
+
+          setQuotes(nextQuotes);
+          setError(null);
+        }
+      } catch (loadError) {
+        console.error("Market quote error:", loadError);
+
+        if (!cancelled) {
+          setError("Some market data is unavailable");
+        }
+      }
+    }
+
+    loadQuotes();
+
+    const interval = window.setInterval(
+      loadQuotes,
+      60_000,
+    );
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="mx-auto max-w-[1600px] p-6">
+        <header className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              TradeFlow
+            </h1>
+
+            <p className="mt-1 text-sm text-slate-400">
+              Multi-asset market dashboard
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
+            <p className="text-xs text-slate-500">
+              Portfolio Value
+            </p>
+
+            <p className="mt-1 text-lg font-semibold">$—</p>
+          </div>
+        </header>
+
+        <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
+          <aside className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">
+                Watchlist
+              </h2>
+
+              <button
+                type="button"
+                className="rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-400 transition hover:border-slate-600 hover:text-slate-200"
+              >
+                +
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {assets.map((asset) => {
+                const isSelected =
+                  asset.symbol === selectedAsset.symbol;
+
+                const assetQuote = quotes[asset.symbol];
+
+                return (
+                  <button
+                    key={asset.symbol}
+                    type="button"
+                    onClick={() =>
+                      setSelectedSymbol(asset.symbol)
+                    }
+                    className={`w-full rounded-lg border p-3 text-left transition ${
+                      isSelected
+                        ? "border-slate-600 bg-slate-800"
+                        : "border-transparent hover:border-slate-800 hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">
+                        {asset.symbol}
+                      </span>
+
+                      <span className="text-xs uppercase text-slate-500">
+                        {asset.type}
+                      </span>
+                    </div>
+
+                    <div className="mt-1 text-xs text-slate-400">
+                      {asset.name}
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-sm text-slate-300">
+                        {assetQuote
+                          ? `$${assetQuote.price.toLocaleString()}`
+                          : "—"}
+                      </span>
+
+                      <span
+                        className={`text-xs ${
+                          assetQuote
+                            ? assetQuote.change24h >= 0
+                              ? "text-emerald-400"
+                              : "text-red-400"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        {assetQuote
+                          ? `${assetQuote.change24h >= 0 ? "+" : ""}${assetQuote.change24h.toFixed(2)}%`
+                          : "—"}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          <section className="min-w-0">
+            <div className="mb-5 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+              <div>
+                <p className="text-sm text-slate-500">
+                  Selected Asset
+                </p>
+
+                <div className="mt-1 flex items-baseline gap-3">
+                  <h2 className="text-2xl font-bold">
+                    {selectedAsset.symbol}
+                  </h2>
+
+                  <span className="text-sm text-slate-400">
+                    {selectedAsset.name}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {timeframes.map((timeframe) => (
+                  <button
+                    key={timeframe}
+                    type="button"
+                    onClick={() =>
+                      setSelectedTimeframe(timeframe)
+                    }
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                      selectedTimeframe === timeframe
+                        ? "bg-slate-100 text-slate-950"
+                        : "border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200"
+                    }`}
+                  >
+                    {timeframe}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p className="text-xs text-slate-500">
+                  Price
+                </p>
+
+                <p className="mt-2 text-xl font-semibold">
+                  {selectedQuote
+                    ? `$${selectedQuote.price.toLocaleString()}`
+                    : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p className="text-xs text-slate-500">
+                  24h Change
+                </p>
+
+                <p
+                  className={`mt-2 text-xl font-semibold ${
+                    selectedQuote
+                      ? selectedQuote.change24h >= 0
+                        ? "text-emerald-400"
+                        : "text-red-400"
+                      : "text-slate-300"
+                  }`}
+                >
+                  {selectedQuote
+                    ? `${selectedQuote.change24h >= 0 ? "+" : ""}${selectedQuote.change24h.toFixed(2)}%`
+                    : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p className="text-xs text-slate-500">
+                  24h High
+                </p>
+
+                <p className="mt-2 text-xl font-semibold">
+                  {selectedQuote
+                    ? `$${selectedQuote.high24h.toLocaleString()}`
+                    : "—"}
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+                <p className="text-xs text-slate-500">
+                  24h Low
+                </p>
+
+                <p className="mt-2 text-xl font-semibold">
+                  {selectedQuote
+                    ? `$${selectedQuote.low24h.toLocaleString()}`
+                    : "—"}
+                </p>
+              </div>
+            </div>
+
+            {error && (
+              <div className="mb-4 rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-400">
+                {error}
+              </div>
+            )}
+
+            <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-2">
+              <PriceChart
+                symbol={selectedAsset.symbol}
+                timeframe={selectedTimeframe}
+              />
+            </div>
+
+            <div className="mt-6 grid gap-6 xl:grid-cols-2">
+              <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold">
+                      Price Levels
+                    </h3>
+
+                    <p className="mt-1 text-xs text-slate-500">
+                      Support, resistance, and custom levels
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 transition hover:border-slate-600 hover:text-slate-200"
+                  >
+                    Add Level
+                  </button>
+                </div>
+
+                <div className="rounded-lg border border-dashed border-slate-800 p-6 text-center">
+                  <p className="text-sm text-slate-500">
+                    No price levels configured
+                  </p>
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
+                <h3 className="font-semibold">
+                  Market Statistics
+                </h3>
+
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <span className="text-sm text-slate-400">
+                      Volume
+                    </span>
+
+                    <span className="text-sm font-medium">
+                      {selectedQuote
+                        ? `$${selectedQuote.volume24h.toLocaleString()}`
+                        : "—"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <span className="text-sm text-slate-400">
+                      24h Range
+                    </span>
+
+                    <span className="text-sm font-medium">
+                      {selectedQuote
+                        ? `$${selectedQuote.low24h.toLocaleString()} – $${selectedQuote.high24h.toLocaleString()}`
+                        : "—"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-400">
+                      Data Status
+                    </span>
+
+                    <span className="text-sm text-emerald-400">
+                      Live
+                    </span>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </section>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
