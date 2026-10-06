@@ -31,7 +31,9 @@ type CoinGeckoOhlcResponse = [
   number,
 ][];
 
-export class CoinGeckoMarketDataProvider implements MarketDataProvider {
+export class CoinGeckoMarketDataProvider
+  implements MarketDataProvider
+{
   private getApiKey(): string {
     const apiKey = process.env.COINGECKO_API_KEY;
 

@@ -292,34 +292,7 @@ export default function Home() {
               />
             </div>
 
-            <div className="mt-6 grid gap-6 xl:grid-cols-2">
-              <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold">
-                      Price Levels
-                    </h3>
-
-                    <p className="mt-1 text-xs text-slate-500">
-                      Support, resistance, and custom levels
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-400 transition hover:border-slate-600 hover:text-slate-200"
-                  >
-                    Add Level
-                  </button>
-                </div>
-
-                <div className="rounded-lg border border-dashed border-slate-800 p-6 text-center">
-                  <p className="text-sm text-slate-500">
-                    No price levels configured
-                  </p>
-                </div>
-              </section>
-
+            <div className="mt-6">
               <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
                 <h3 className="font-semibold">
                   Market Statistics
