@@ -1381,8 +1381,10 @@ export default function PriceChart({
       ),
     );
 
-    chart.timeScale().fitContent();
-    hasInitialFitRef.current = true;
+    if (!hasInitialFitRef.current) {
+      chart.timeScale().fitContent();
+      hasInitialFitRef.current = true;
+    }
   }, [candles, timeframe, showBollingerBands]);
 
   /*
