@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { assets } from "@/lib/market";
-import { db } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,9 +14,7 @@ interface MonitorSettings {
   enabled: boolean;
 }
 
-function validateSettings(
-  value: unknown,
-): MonitorSettings | null {
+function validateSettings(value: unknown): MonitorSettings | null {
   if (typeof value !== "object" || value === null) {
     return null;
   }
@@ -40,8 +37,7 @@ function validateSettings(
     symbols.length > 5 ||
     !symbols.every(
       (symbol) =>
-        typeof symbol === "string" &&
-        ALLOWED_SYMBOLS.has(symbol),
+        typeof symbol === "string" && ALLOWED_SYMBOLS.has(symbol),
     ) ||
     new Set(symbols).size !== symbols.length
   ) {
@@ -70,6 +66,8 @@ function validateSettings(
 
 export async function GET() {
   try {
+    const { db } = await import("@/lib/db");
+
     const result = await db.query<MonitorSettings>(
       `
         SELECT symbols, timeframes, enabled
@@ -92,7 +90,7 @@ export async function GET() {
     console.error("Unable to load alert-monitor settings:", error);
 
     return NextResponse.json(
-      { error: "Unable to load alert-monitor settings." },
+      { error: "Unable to load alert-monitor settings. Configure a working database to enable this feature." },
       { status: 503 },
     );
   }
@@ -123,6 +121,8 @@ export async function PUT(request: Request) {
   }
 
   try {
+    const { db } = await import("@/lib/db");
+
     const result = await db.query<MonitorSettings>(
       `
         INSERT INTO public.alert_monitor_settings (
@@ -151,7 +151,7 @@ export async function PUT(request: Request) {
     console.error("Unable to save alert-monitor settings:", error);
 
     return NextResponse.json(
-      { error: "Unable to save alert-monitor settings." },
+      { error: "Unable to save alert-monitor settings. Configure a working database to enable this feature." },
       { status: 503 },
     );
   }
