@@ -113,6 +113,7 @@ export class BitstampMarketDataProvider
   private getStepForInterval(interval: string): number {
     const stepsByInterval: Record<string, number> = {
       "1m": 60,
+      "3m": 180,
       "30m": 1800,
       "1H": 3600,
       "4H": 14400,

@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Local backup files
+*.bak
+*.backup
+*.backup-*
+
+# Keep SQL migration scripts tracked
+!database/migrations/*.sql
